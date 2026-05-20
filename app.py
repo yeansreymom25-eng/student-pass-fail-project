@@ -1,11 +1,14 @@
 import time
+import os
 import pickle
 from pathlib import Path
 
 import pandas as pd
+import requests
 import streamlit as st
 
 
+API_URL = os.getenv("API_URL", "").strip()
 MODEL_PATH = Path(__file__).with_name("model.pkl")
 
 st.set_page_config(
@@ -840,6 +843,11 @@ def load_model():
 
 
 def get_prediction(payload):
+    if API_URL:
+        response = requests.post(API_URL, json=payload, timeout=8)
+        response.raise_for_status()
+        return response.json()["prediction"]
+
     model = load_model()
     input_data = pd.DataFrame([payload])
     return model.predict(input_data)[0]
@@ -962,7 +970,7 @@ with right_col:
         """
         <div class="glass-card">
             <p class="card-title">Result panel</p>
-            <p class="card-copy">Powered by the trained decision tree model.</p>
+            <p class="card-copy">Powered by the Flask API when configured, with a direct model fallback for deployment.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -991,6 +999,9 @@ with right_col:
         except FileNotFoundError:
             st.session_state.prediction = None
             st.error("The trained model file was not found. Make sure model.pkl is included in the repository.")
+        except requests.exceptions.RequestException:
+            st.session_state.prediction = None
+            st.error("The prediction API is not reachable. Check the API_URL setting or run the app without API_URL.")
         except (KeyError, ValueError, pickle.PickleError):
             st.session_state.prediction = None
             st.error("The model could not return a prediction. Check that the model and inputs use the same features.")
