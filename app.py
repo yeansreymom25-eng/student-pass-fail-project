@@ -1,10 +1,12 @@
 import time
+import pickle
+from pathlib import Path
 
-import requests
+import pandas as pd
 import streamlit as st
 
 
-API_URL = "http://127.0.0.1:5000/predict"
+MODEL_PATH = Path(__file__).with_name("model.pkl")
 
 st.set_page_config(
     page_title="Student Outcome Predictor",
@@ -831,10 +833,16 @@ def empty_result_state():
     )
 
 
+@st.cache_resource
+def load_model():
+    with MODEL_PATH.open("rb") as file:
+        return pickle.load(file)
+
+
 def get_prediction(payload):
-    response = requests.post(API_URL, json=payload, timeout=8)
-    response.raise_for_status()
-    return response.json()["prediction"]
+    model = load_model()
+    input_data = pd.DataFrame([payload])
+    return model.predict(input_data)[0]
 
 
 def absence_level(absences):
@@ -954,7 +962,7 @@ with right_col:
         """
         <div class="glass-card">
             <p class="card-title">Result panel</p>
-            <p class="card-copy">Powered by the Flask API and the trained decision tree model.</p>
+            <p class="card-copy">Powered by the trained decision tree model.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -980,12 +988,12 @@ with right_col:
             st.session_state.last_average_grade = average_grade
             st.session_state.last_absence_band = absence_band
             st.session_state.last_risk = current_risk
-        except requests.exceptions.RequestException:
+        except FileNotFoundError:
             st.session_state.prediction = None
-            st.error("The prediction API is not reachable. Start the Flask API, then run the prediction again.")
-        except (KeyError, ValueError):
+            st.error("The trained model file was not found. Make sure model.pkl is included in the repository.")
+        except (KeyError, ValueError, pickle.PickleError):
             st.session_state.prediction = None
-            st.error("The API returned an unexpected response. Check that the Flask service is using the latest code.")
+            st.error("The model could not return a prediction. Check that the model and inputs use the same features.")
 
     if st.session_state.prediction:
         result_card(
