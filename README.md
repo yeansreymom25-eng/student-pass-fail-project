@@ -62,7 +62,7 @@ python api.py
 Terminal 2:
 
 ```bash
-$env:API_URL="http://127.0.0.1:5000/predict"
+$env:API_URL="http://127.0.0.1:5001/predict"
 streamlit run app.py
 ```
 
@@ -72,7 +72,7 @@ The Streamlit UI will send prediction requests to the Flask API when `API_URL` i
 With `python api.py` running, send a POST request:
 
 ```bash
-curl -X POST http://127.0.0.1:5000/predict -H "Content-Type: application/json" -d "{\"studytime\":2,\"failures\":0,\"absences\":5,\"health\":3,\"G1\":10,\"G2\":10}"
+curl -X POST http://127.0.0.1:5001/predict -H "Content-Type: application/json" -d "{\"studytime\":2,\"failures\":0,\"absences\":5,\"health\":3,\"G1\":10,\"G2\":10}"
 ```
 
 ## Deploy Without a Card
